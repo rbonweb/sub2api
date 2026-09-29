@@ -1,0 +1,61 @@
+# Publishes a GitHub release of this fork for every version its main reaches, so the admin page's Update Now (which reads this repository's releases) installs the fork's build rather than upstream's.
+#
+# A "Sync fork" brings in upstream's VERSION bump; this tags that commit v<VERSION>, carrying upstream's release notes when upstream has the same tag, and runs Release (release.yml) for it. A tag pushed with GITHUB_TOKEN starts no workflow, so Release is dispatched rather than triggered by the tag.
+name: Fork release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: fork-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'rbonweb/sub2api'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Tag this version and start its release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UPSTREAM: https://github.com/Wei-Shaw/sub2api.git
+        run: |
+          set -euo pipefail
+          version=$(tr -d '\r\n' < backend/cmd/server/VERSION)
+          tag="v$version"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            if gh release view "$tag" >/dev/null 2>&1; then
+              echo "$tag is already released."
+              exit 0
+            fi
+            running=$(gh run list --workflow release.yml --limit 20 --json status --jq '[.[] | select(.status != "completed")] | length')
+            if [ "$running" != 0 ]; then
+              echo "$tag is tagged and a release is already running."
+              exit 0
+            fi
+            echo "$tag is tagged but has no release; starting it again."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            if git fetch --no-tags --depth=1 "$UPSTREAM" "refs/tags/$tag:refs/tags/upstream-$tag" 2>/dev/null \
+              && [ "$(git cat-file -t "upstream-$tag")" = tag ]; then
+              git tag -l --format='%(contents)' "upstream-$tag" > "$RUNNER_TEMP/notes"
+            else
+              echo "Sub2API $version" > "$RUNNER_TEMP/notes"
+            fi
+            printf '\nBuilt from %s at %s.\n' "$GITHUB_REPOSITORY" "$GITHUB_SHA" >> "$RUNNER_TEMP/notes"
+            git tag -a "$tag" -F "$RUNNER_TEMP/notes" "$GITHUB_SHA"
+            git push origin "refs/tags/$tag"
+          fi
+
+          gh workflow run release.yml --ref "$GITHUB_REF_NAME" -f tag="$tag"
+          echo "Started Release for $tag."
