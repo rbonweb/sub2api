@@ -134,6 +134,28 @@ func TestApplyToolNameRewriteToBody_RenamesToolUseWithDynamicMapping(t *testing.
 	require.Equal(t, "ok", gjson.GetBytes(out, "messages.1.content.0.content").String())
 }
 
+func TestApplyToolNameRewriteToBody_RenamesContextManagementExcludeTools(t *testing.T) {
+	// clear_tool_uses 的 exclude_tools 按工具名匹配，必须和 tools[] 中的假名同步改写，
+	// server tool 和不在 tools[] 中的名字保持不变。
+	body := []byte(`{"tools":[{"name":"alpha_search","input_schema":{}},{"name":"beta_lookup","input_schema":{}},{"name":"gamma_fetch","input_schema":{}},{"name":"delta_update","input_schema":{}},{"name":"epsilon_parse","input_schema":{}},{"name":"zeta_render","input_schema":{}},{"name":"web_search","type":"web_search_20250305"}],"context_management":{"edits":[{"type":"clear_thinking_20251015","keep":"all"},{"type":"clear_tool_uses_20250919","keep":{"type":"tool_uses","value":4},"exclude_tools":["beta_lookup","web_search","not_a_tool","zeta_render"]}]}}`)
+	rw := buildToolNameRewriteFromBody(body)
+	require.NotNil(t, rw)
+
+	out := applyToolNameRewriteToBody(body, rw)
+	require.True(t, gjson.ValidBytes(out))
+
+	excluded := gjson.GetBytes(out, "context_management.edits.1.exclude_tools").Array()
+	require.Len(t, excluded, 4)
+	require.Equal(t, rw.Forward["beta_lookup"], excluded[0].String())
+	require.Equal(t, gjson.GetBytes(out, "tools.1.name").String(), excluded[0].String())
+	require.Equal(t, "web_search", excluded[1].String())
+	require.Equal(t, "not_a_tool", excluded[2].String())
+	require.Equal(t, rw.Forward["zeta_render"], excluded[3].String())
+	// 其余 edit 保持原样
+	require.Equal(t, "clear_thinking_20251015", gjson.GetBytes(out, "context_management.edits.0.type").String())
+	require.Equal(t, int64(4), gjson.GetBytes(out, "context_management.edits.1.keep.value").Int())
+}
+
 func TestApplyToolsLastCacheBreakpoint_InjectsDefault(t *testing.T) {
 	body := []byte(`{"tools":[{"name":"a","input_schema":{}},{"name":"b","input_schema":{}}]}`)
 	out := applyToolsLastCacheBreakpoint(body)

@@ -178,6 +178,7 @@ type toolNameSpan struct {
 //
 //   - 改写 $.tools[*].name（仅对 shouldMimicToolName 通过的 tool）
 //   - 改写 $.tool_choice.name（仅当 $.tool_choice.type == "tool"）
+//   - 改写 $.context_management.edits[*].exclude_tools[*]
 //   - 改写 $.messages[*].content[*].name（仅当 type == "tool_use"）
 //   - 在 $.tools[last].cache_control 上打 ephemeral 缓存断点
 //
@@ -218,6 +219,19 @@ func applyToolNameRewriteToBody(body []byte, rw *ToolNameRewrite) []byte {
 	}
 	if choice := gjson.GetBytes(body, "tool_choice"); choice.Get("type").String() == "tool" {
 		addName(choice.Get("name"))
+	}
+	// clear_tool_uses 按工具名排除：exclude_tools 必须和 tools[] 中的假名一致，
+	// 否则上游匹配不到任何工具，排除失效，本应保留的工具结果会被清掉。
+	if cmEdits := gjson.GetBytes(body, "context_management.edits"); cmEdits.IsArray() {
+		cmEdits.ForEach(func(_, edit gjson.Result) bool {
+			if excluded := edit.Get("exclude_tools"); excluded.IsArray() {
+				excluded.ForEach(func(_, name gjson.Result) bool {
+					addName(name)
+					return true
+				})
+			}
+			return true
+		})
 	}
 	if messages := gjson.GetBytes(body, "messages"); messages.IsArray() {
 		messages.ForEach(func(_, msg gjson.Result) bool {
