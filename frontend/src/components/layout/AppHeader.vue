@@ -316,7 +316,7 @@ const displayName = computed(() => {
 // 订阅功能关闭时不挂载顶栏订阅徽章（组件 onMounted 会拉取订阅接口）。
 const subscriptionFeatureEnabled = computed(() => isFeatureFlagEnabled(FeatureFlags.subscription))
 
-// /purchase 的标题/描述随站点计费模式切换，与 document.title 共用同一解析。
+// /purchase 的标题/描述随站点计费模式切换。
 const routeMetaKeys = computed(() => resolveRouteMetaKeys(route, {
   billingMode: resolveSiteBillingMode(appStore.cachedPublicSettings),
 }))

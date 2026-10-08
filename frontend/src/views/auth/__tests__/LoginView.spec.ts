@@ -90,29 +90,45 @@ function mountLogin() {
   })
 }
 
-describe('LoginView registration entry', () => {
+describe('LoginView minimal layout', () => {
   beforeEach(() => {
     getPublicSettingsMock.mockReset()
     pushMock.mockReset()
     getPublicSettingsMock.mockResolvedValue(publicSettings)
   })
 
-  it('shows the registration entry when registration is enabled', async () => {
+  it('renders the email and password fields with a sign-in button', async () => {
     const wrapper = mountLogin()
     await flushPromises()
 
-    expect(wrapper.text()).toContain('auth.signUp')
+    expect(wrapper.find('input#email').exists()).toBe(true)
+    expect(wrapper.find('input#password').exists()).toBe(true)
+    expect(wrapper.find('button[type="submit"]').exists()).toBe(true)
   })
 
-  it('hides the registration entry when registration is disabled', async () => {
+  it('does not render a title, description or extra links', async () => {
     getPublicSettingsMock.mockResolvedValueOnce({
       ...publicSettings,
-      registration_enabled: false
+      registration_enabled: true,
+      password_reset_enabled: true
     })
 
     const wrapper = mountLogin()
     await flushPromises()
 
+    expect(wrapper.find('h1, h2').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('auth.welcomeBack')
+    expect(wrapper.text()).not.toContain('auth.signInToAccount')
     expect(wrapper.text()).not.toContain('auth.signUp')
+    expect(wrapper.text()).not.toContain('auth.forgotPassword')
+    expect(wrapper.findAll('a').length).toBe(0)
+  })
+
+  it('keeps field labels available to screen readers only', async () => {
+    const wrapper = mountLogin()
+    await flushPromises()
+
+    expect(wrapper.get('label[for="email"]').classes()).toContain('sr-only')
+    expect(wrapper.get('label[for="password"]').classes()).toContain('sr-only')
   })
 })
