@@ -377,7 +377,8 @@ jobs:
 
   sync-version-file:
     needs: [prepare, release]
-    if: ${{ needs.release.result == 'success' && needs.prepare.outputs.dry_run != 'true' }}
+    # rbonweb/sub2api versions its releases by tag only (see fork-release.yml), so its VERSION file keeps upstream's value.
+    if: ${{ needs.release.result == 'success' && needs.prepare.outputs.dry_run != 'true' && github.repository != 'rbonweb/sub2api' }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
