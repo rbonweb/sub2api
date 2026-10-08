@@ -1,6 +1,6 @@
-# Publishes a GitHub release of this fork for every version its main reaches, so the admin page's Update Now (which reads this repository's releases) installs the fork's build rather than upstream's.
+# Publishes a GitHub release of this fork for every push to main, so the admin page's Update Now (which reads this repository's releases) installs the fork's latest build rather than upstream's.
 #
-# A "Sync fork" brings in upstream's VERSION bump; this tags that commit v<VERSION>, carrying upstream's release notes when upstream has the same tag, and runs Release (release.yml) for it. A tag pushed with GITHUB_TOKEN starts no workflow, so Release is dispatched rather than triggered by the tag.
+# Each push is tagged with the next patch version after this fork's newest vX.Y.Z tag (v0.2.14 -> v0.2.15). When a "Sync fork" brings in a higher upstream VERSION, that version is used as is and carries upstream's release notes when upstream has the same tag. The version lives only in the tag: Release stamps it into the build, and its VERSION file sync is skipped for this fork so upstream syncs never conflict on that file. A tag pushed with GITHUB_TOKEN starts no workflow, so Release is dispatched rather than triggered by the tag.
 name: Fork release
 
 on:
@@ -23,16 +23,19 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Tag this version and start its release
+      - name: Tag the next version and start its release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UPSTREAM: https://github.com/Wei-Shaw/sub2api.git
         run: |
           set -euo pipefail
-          version=$(tr -d '\r\n' < backend/cmd/server/VERSION)
-          tag="v$version"
+          tags=$(git ls-remote --tags origin 'refs/tags/v*')
 
-          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+          # A re-run for a commit that is already tagged reuses its tag instead of bumping again.
+          tag=$(awk -v sha="$GITHUB_SHA" '$1 == sha { sub("^refs/tags/", "", $2); sub("\\^\\{\\}$", "", $2); print $2 }' <<<"$tags" \
+            | { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } | sort -V | tail -n1)
+
+          if [ -n "$tag" ]; then
             if gh release view "$tag" >/dev/null 2>&1; then
               echo "$tag is already released."
               exit 0
@@ -44,9 +47,23 @@ jobs:
             fi
             echo "$tag is tagged but has no release; starting it again."
           else
+            latest=$(awk '{ print $2 }' <<<"$tags" | sed -n 's#^refs/tags/v\([0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\)$#\1#p' | sort -V | tail -n1)
+            IFS=. read -r major minor patch <<<"${latest:-0.0.0}"
+            version="$major.$minor.$((patch + 1))"
+
+            # A higher VERSION brought in by "Sync fork" wins, keeping upstream's numbering.
+            upstream_version=$(tr -d '\r\n' < backend/cmd/server/VERSION)
+            if [[ $upstream_version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+              && [ "$(printf '%s\n' "$version" "$upstream_version" | sort -V | tail -n1)" = "$upstream_version" ]; then
+              version=$upstream_version
+            fi
+            tag="v$version"
+            echo "Latest release tag: v${latest:-none}; releasing $tag."
+
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            if git fetch --no-tags --depth=1 "$UPSTREAM" "refs/tags/$tag:refs/tags/upstream-$tag" 2>/dev/null \
+            if [ "$version" = "$upstream_version" ] \
+              && git fetch --no-tags --depth=1 "$UPSTREAM" "refs/tags/$tag:refs/tags/upstream-$tag" 2>/dev/null \
               && [ "$(git cat-file -t "upstream-$tag")" = tag ]; then
               git tag -l --format='%(contents)' "upstream-$tag" > "$RUNNER_TEMP/notes"
             else
