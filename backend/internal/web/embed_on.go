@@ -211,7 +211,7 @@ func (s *FrontendServer) injectSettings(settingsJSON []byte) []byte {
 	result := bytes.Replace(s.baseHTML, headClose, append(script, headClose...), 1)
 
 	// Apply custom branding before the browser paints the static defaults.
-	result = injectSiteTitle(result, settingsJSON)
+	// The <title> is intentionally left as the static value from index.html.
 	result = injectSiteFavicon(result, settingsJSON)
 
 	return result
@@ -266,31 +266,6 @@ func safeImageURL(value string) string {
 		return ""
 	}
 	return trimmed
-}
-
-// injectSiteTitle replaces the static <title> in HTML with the configured site name.
-// This ensures the browser tab shows the correct title before JS executes.
-func injectSiteTitle(html, settingsJSON []byte) []byte {
-	var cfg struct {
-		SiteName string `json:"site_name"`
-	}
-	if err := json.Unmarshal(settingsJSON, &cfg); err != nil || cfg.SiteName == "" {
-		return html
-	}
-
-	// Find and replace the existing <title>...</title>
-	titleStart := bytes.Index(html, []byte("<title>"))
-	titleEnd := bytes.Index(html, []byte("</title>"))
-	if titleStart == -1 || titleEnd == -1 || titleEnd <= titleStart {
-		return html
-	}
-
-	newTitle := []byte("<title>" + htmlpkg.EscapeString(cfg.SiteName) + " - AI API Gateway</title>")
-	var buf bytes.Buffer
-	buf.Write(html[:titleStart])
-	buf.Write(newTitle)
-	buf.Write(html[titleEnd+len("</title>"):])
-	return buf.Bytes()
 }
 
 // replaceNoncePlaceholder replaces the nonce placeholder with actual nonce value
