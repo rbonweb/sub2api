@@ -917,7 +917,7 @@ export default {
           '仅对 Anthropic API Key 生效。开启后，messages/count_tokens 请求将透传上游并仅替换认证，保留计费/并发/审计及必要安全过滤；关闭即可回滚到现有兼容链路。',
         apiKeyPlainApi: '作为普通 API 发送',
         apiKeyPlainApiDesc:
-          '移除 Claude Code 身份标识（x-app、会话头、claude-code beta、计费块、metadata.user_id）并发送 SDK User-Agent。系统提示词保持不变。',
+          '移除 Claude Code 身份标识（x-app、会话头、客户端请求 ID、内部 beta、计费块、Claude Code 系统提示词、metadata.user_id）并按普通 API 请求发送。',
         apiKeyAuthScheme: '上游认证方式',
         apiKeyAuthSchemeDesc: '选择转发到 Anthropic-compatible 上游时使用的 API Key 认证头。Ollama Cloud 使用 Authorization: Bearer。',
         apiKeyAuthSchemeXApiKey: 'x-api-key',

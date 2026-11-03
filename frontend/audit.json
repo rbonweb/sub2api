@@ -1,26 +1,4 @@
 {
-  "actions": [
-    {
-      "action": "review",
-      "module": "xlsx",
-      "resolves": [
-        {
-          "id": 1108110,
-          "path": ".>xlsx",
-          "dev": false,
-          "bundled": false,
-          "optional": false
-        },
-        {
-          "id": 1108111,
-          "path": ".>xlsx",
-          "dev": false,
-          "bundled": false,
-          "optional": false
-        }
-      ]
-    }
-  ],
   "advisories": {
     "1108110": {
       "findings": [
@@ -28,37 +6,21 @@
           "version": "0.18.5",
           "paths": [
             ".>xlsx"
-          ]
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
         }
       ],
-      "found_by": null,
-      "deleted": null,
-      "references": "- https://nvd.nist.gov/vuln/detail/CVE-2023-30533\n- https://cdn.sheetjs.com/advisories/CVE-2023-30533\n- https://git.sheetjs.com/sheetjs/sheetjs/src/branch/master/CHANGELOG.md\n- https://git.sheetjs.com/sheetjs/sheetjs/issues/2667\n- https://git.sheetjs.com/sheetjs/sheetjs/issues/2986\n- https://cdn.sheetjs.com\n- https://github.com/advisories/GHSA-4r6h-8v6p-xvw6",
-      "created": "2023-04-24T09:30:19.000Z",
       "id": 1108110,
-      "npm_advisory_id": null,
-      "overview": "All versions of SheetJS CE through 0.19.2 are vulnerable to \"Prototype Pollution\" when reading specially crafted files. Workflows that do not read arbitrary files (for example, exporting data to spreadsheet files) are unaffected.\n\nA non-vulnerable version cannot be found via npm, as the repository hosted on GitHub and the npm package `xlsx` are no longer maintained. Version 0.19.3 can be downloaded via https://cdn.sheetjs.com/.",
-      "reported_by": null,
       "title": "Prototype Pollution in sheetJS",
-      "metadata": null,
-      "cves": [
-        "CVE-2023-30533"
-      ],
-      "access": "public",
-      "severity": "high",
       "module_name": "xlsx",
       "vulnerable_versions": "<0.19.3",
+      "patched_versions": null,
+      "patched_versions_unpublished": true,
+      "severity": "high",
+      "cwe": "CWE-1321",
       "github_advisory_id": "GHSA-4r6h-8v6p-xvw6",
-      "recommendation": "None",
-      "patched_versions": "<0.0.0",
-      "updated": "2025-09-19T15:23:41.000Z",
-      "cvss": {
-        "score": 7.8,
-        "vectorString": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
-      },
-      "cwe": [
-        "CWE-1321"
-      ],
       "url": "https://github.com/advisories/GHSA-4r6h-8v6p-xvw6"
     },
     "1108111": {
@@ -67,52 +29,147 @@
           "version": "0.18.5",
           "paths": [
             ".>xlsx"
-          ]
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
         }
       ],
-      "found_by": null,
-      "deleted": null,
-      "references": "- https://nvd.nist.gov/vuln/detail/CVE-2024-22363\n- https://cdn.sheetjs.com/advisories/CVE-2024-22363\n- https://cwe.mitre.org/data/definitions/1333.html\n- https://git.sheetjs.com/sheetjs/sheetjs/src/tag/v0.20.2\n- https://cdn.sheetjs.com\n- https://github.com/advisories/GHSA-5pgg-2g8v-p4x9",
-      "created": "2024-04-05T06:30:46.000Z",
       "id": 1108111,
-      "npm_advisory_id": null,
-      "overview": "SheetJS Community Edition before 0.20.2 is vulnerable.to Regular Expression Denial of Service (ReDoS).\n\nA non-vulnerable version cannot be found via npm, as the repository hosted on GitHub and the npm package `xlsx` are no longer maintained. Version 0.20.2 can be downloaded via https://cdn.sheetjs.com/.",
-      "reported_by": null,
       "title": "SheetJS Regular Expression Denial of Service (ReDoS)",
-      "metadata": null,
-      "cves": [
-        "CVE-2024-22363"
-      ],
-      "access": "public",
-      "severity": "high",
       "module_name": "xlsx",
       "vulnerable_versions": "<0.20.2",
+      "patched_versions": null,
+      "patched_versions_unpublished": true,
+      "severity": "high",
+      "cwe": "CWE-1333",
       "github_advisory_id": "GHSA-5pgg-2g8v-p4x9",
-      "recommendation": "None",
-      "patched_versions": "<0.0.0",
-      "updated": "2025-09-19T15:23:26.000Z",
-      "cvss": {
-        "score": 7.5,
-        "vectorString": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
-      },
-      "cwe": [
-        "CWE-1333"
-      ],
       "url": "https://github.com/advisories/GHSA-5pgg-2g8v-p4x9"
+    },
+    "1243637": {
+      "findings": [
+        {
+          "version": "9.14.5",
+          "paths": [
+            ".>vue-i18n>@intlify/shared",
+            ".>vue-i18n>@intlify/core-base>@intlify/message-compiler>@intlify/shared",
+            ".>vue-i18n>@intlify/core-base>@intlify/shared"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243637,
+      "title": "Vue I18n: escapeParameter does not prevent XSS through srcdoc in translation messages",
+      "module_name": "@intlify/shared",
+      "vulnerable_versions": "=9.14.5",
+      "patched_versions": null,
+      "severity": "high",
+      "cwe": "CWE-79, CWE-116",
+      "github_advisory_id": "GHSA-83rm-6c8r-g728",
+      "url": "https://github.com/advisories/GHSA-83rm-6c8r-g728"
+    },
+    "1243649": {
+      "findings": [
+        {
+          "version": "9.14.5",
+          "paths": [
+            ".>vue-i18n>@intlify/core-base"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243649,
+      "title": "Vue I18n: escapeParameter does not prevent XSS through srcdoc in translation messages",
+      "module_name": "@intlify/core-base",
+      "vulnerable_versions": "=9.14.5",
+      "patched_versions": null,
+      "severity": "high",
+      "cwe": "CWE-79, CWE-116",
+      "github_advisory_id": "GHSA-83rm-6c8r-g728",
+      "url": "https://github.com/advisories/GHSA-83rm-6c8r-g728"
+    },
+    "1243657": {
+      "findings": [
+        {
+          "version": "9.14.5",
+          "paths": [
+            ".>vue-i18n"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243657,
+      "title": "Vue I18n: escapeParameter does not prevent XSS through srcdoc in translation messages",
+      "module_name": "vue-i18n",
+      "vulnerable_versions": "=9.14.5",
+      "patched_versions": null,
+      "severity": "high",
+      "cwe": "CWE-79, CWE-116",
+      "github_advisory_id": "GHSA-83rm-6c8r-g728",
+      "url": "https://github.com/advisories/GHSA-83rm-6c8r-g728"
+    },
+    "1243857": {
+      "findings": [
+        {
+          "version": "0.4.1",
+          "paths": [
+            ".>@lobehub/icons>@lobehub/ui>query-string>decode-uri-component"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1243857,
+      "title": "decode-uri-component vulnerable to denial of service via quadratic replacement of percent-encoded runs",
+      "module_name": "decode-uri-component",
+      "vulnerable_versions": "<=0.5.0",
+      "patched_versions": ">=0.5.1",
+      "severity": "high",
+      "cwe": "CWE-400, CWE-407",
+      "github_advisory_id": "GHSA-qr28-fpjm-wq7f",
+      "url": "https://github.com/advisories/GHSA-qr28-fpjm-wq7f"
+    },
+    "1244003": {
+      "findings": [
+        {
+          "version": "1.16.1",
+          "paths": [
+            ".>axios>follow-redirects"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1244003,
+      "title": "follow-redirects: Cross-realm sensitiveHeaders arrays are discarded and custom credentials can follow redirects",
+      "module_name": "follow-redirects",
+      "vulnerable_versions": ">=1.16.0 <=1.16.1",
+      "patched_versions": ">=1.16.2",
+      "severity": "high",
+      "cwe": "CWE-201",
+      "github_advisory_id": "GHSA-mrwp-f3q8-3g9p",
+      "url": "https://github.com/advisories/GHSA-mrwp-f3q8-3g9p"
     }
   },
-  "muted": [],
   "metadata": {
     "vulnerabilities": {
       "info": 0,
-      "low": 0,
-      "moderate": 0,
-      "high": 2,
+      "low": 4,
+      "moderate": 13,
+      "high": 7,
       "critical": 0
     },
-    "dependencies": 639,
+    "dependencies": 681,
     "devDependencies": 0,
     "optionalDependencies": 0,
-    "totalDependencies": 639
+    "totalDependencies": 681
   }
 }
