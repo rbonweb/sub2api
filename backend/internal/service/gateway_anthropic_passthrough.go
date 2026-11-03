@@ -300,6 +300,9 @@ func (s *GatewayService) buildUpstreamRequestAnthropicAPIKeyPassthrough(
 	token string,
 ) (*http.Request, []byte, error) {
 	body = stripDeferredToolCacheControl(body)
+	if account != nil && account.IsAnthropicPlainAPIEnabled() {
+		body = stripClaudeCodeBodyMarkers(body)
+	}
 	targetURL := claudeAPIURL
 	baseURL := getAnthropicGatewayBaseURL(account)
 	if baseURL != "" {
@@ -361,6 +364,10 @@ func (s *GatewayService) buildUpstreamRequestAnthropicAPIKeyPassthrough(
 	}
 	if getHeaderRaw(req.Header, "anthropic-version") == "" {
 		setHeaderRaw(req.Header, "anthropic-version", "2023-06-01")
+	}
+
+	if account != nil && account.IsAnthropicPlainAPIEnabled() {
+		stripClaudeCodeHeaderMarkers(req.Header)
 	}
 
 	// 账号级请求头覆写（最终生效，覆盖上面所有来源的同名头）

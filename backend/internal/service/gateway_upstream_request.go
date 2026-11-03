@@ -126,6 +126,10 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 		body = syncBillingHeaderVersion(body, billingUA)
 	}
 
+	if account != nil && account.IsAnthropicPlainAPIEnabled() {
+		body = stripClaudeCodeBodyMarkers(body)
+	}
+
 	// === 计算最终 anthropic-beta header（先于 body sanitize 与 CCH 签名）===
 	//
 	// 顺序约束：
@@ -228,6 +232,10 @@ func (s *GatewayService) buildUpstreamRequest(ctx context.Context, c *gin.Contex
 				setHeaderRaw(req.Header, "X-Claude-Code-Session-Id", parsed.SessionID)
 			}
 		}
+	}
+
+	if account != nil && account.IsAnthropicPlainAPIEnabled() {
+		stripClaudeCodeHeaderMarkers(req.Header)
 	}
 
 	// 账号级请求头覆写（仅 anthropic/openai api_key 账号启用时生效；OAuth 路径 no-op）。
