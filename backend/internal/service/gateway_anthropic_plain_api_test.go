@@ -497,7 +497,7 @@ func TestBuilders_HeaderOverrideWinsOverPlainAPI(t *testing.T) {
 		Platform: PlatformAnthropic,
 		Type:     AccountTypeAPIKey,
 		Credentials: map[string]any{
-			"api_key":                     "sk-ant-test-key",
+			"api_key":                    "sk-ant-test-key",
 			credKeyHeaderOverrideEnabled: true,
 			credKeyHeaderOverrides: map[string]any{
 				"user-agent": "Custom-SDK/4.2.0 (special-env)",

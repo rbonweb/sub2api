@@ -29,12 +29,23 @@ func TestAccount_IsAnthropicPlainAPIEnabled(t *testing.T) {
 		require.False(t, account.IsAnthropicPlainAPIEnabled())
 	})
 
-	t.Run("字段类型非法默认关闭", func(t *testing.T) {
+	t.Run("字符串形式布尔值容错开启", func(t *testing.T) {
 		account := &Account{
 			Platform: PlatformAnthropic,
 			Type:     AccountTypeAPIKey,
 			Extra: map[string]any{
 				"anthropic_plain_api": "true",
+			},
+		}
+		require.True(t, account.IsAnthropicPlainAPIEnabled())
+	})
+
+	t.Run("字段值非法默认关闭", func(t *testing.T) {
+		account := &Account{
+			Platform: PlatformAnthropic,
+			Type:     AccountTypeAPIKey,
+			Extra: map[string]any{
+				"anthropic_plain_api": "invalid",
 			},
 		}
 		require.False(t, account.IsAnthropicPlainAPIEnabled())
@@ -71,4 +82,3 @@ func TestAccount_IsAnthropicPlainAPIEnabled(t *testing.T) {
 		require.False(t, openai.IsAnthropicPlainAPIEnabled())
 	})
 }
-

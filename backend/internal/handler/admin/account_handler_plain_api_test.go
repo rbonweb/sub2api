@@ -66,4 +66,3 @@ func TestAccountHandler_Create_AnthropicAPIKeyPlainAPIExtraForwarded(t *testing.
 	require.NotNil(t, created.Extra)
 	require.Equal(t, true, created.Extra["anthropic_plain_api"])
 }
-

@@ -2406,8 +2406,7 @@ func (a *Account) IsAnthropicPlainAPIEnabled() bool {
 	if a == nil || a.Platform != PlatformAnthropic || a.Type != AccountTypeAPIKey || a.Extra == nil {
 		return false
 	}
-	enabled, ok := a.Extra["anthropic_plain_api"].(bool)
-	return ok && enabled
+	return a.getExtraBool("anthropic_plain_api")
 }
 
 // WebSearch 模拟三态常量
@@ -2691,8 +2690,15 @@ func (a *Account) getExtraBool(key string) bool {
 		return false
 	}
 	if v, ok := a.Extra[key]; ok {
-		if b, ok := v.(bool); ok {
-			return b
+		switch val := v.(type) {
+		case bool:
+			return val
+		case string:
+			return strings.EqualFold(val, "true") || val == "1"
+		case float64:
+			return val == 1
+		case int:
+			return val == 1
 		}
 	}
 	return false

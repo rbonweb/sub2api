@@ -13,12 +13,12 @@ import (
 const defaultAnthropicPlainAPIJSSDKVersion = "0.94.0"
 
 var claudeCodeIdentityOpeners = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)^[ \t\r\n]*You are Claude Code, Anthropic'?s official CLI for Claude(?:, running within the Claude Agent SDK)?\.?[ \t\r\n]*`),
-	regexp.MustCompile(`(?i)^[ \t\r\n]*You are a Claude agent, built on Anthropic'?s Claude Agent SDK\.?[ \t\r\n]*`),
-	regexp.MustCompile(`(?i)^[ \t\r\n]*You are a file search specialist for Claude Code, Anthropic'?s official CLI for Claude\.?[ \t\r\n]*`),
+	regexp.MustCompile(`(?i)^[ \t\r\n]*You are Claude Code[^\r\n]*[\r\n]*`),
+	regexp.MustCompile(`(?i)^[ \t\r\n]*You are a Claude agent[^\r\n]*[\r\n]*`),
+	regexp.MustCompile(`(?i)^[ \t\r\n]*You are a file search specialist for Claude Code[^\r\n]*[\r\n]*`),
 	regexp.MustCompile(`(?i)^[ \t\r\n]*You are an interactive CLI tool that helps users[^\r\n]*[\r\n]*`),
-	regexp.MustCompile(`(?i)^[ \t\r\n]*You are a security monitor for autonomous AI coding agents\.?[ \t\r\n]*`),
-	regexp.MustCompile(`(?i)^[ \t\r\n]*You are a helpful AI assistant tasked with summarizing conversations\.?[ \t\r\n]*`),
+	regexp.MustCompile(`(?i)^[ \t\r\n]*You are a security monitor for autonomous AI coding agents[^\r\n]*[\r\n]*`),
+	regexp.MustCompile(`(?i)^[ \t\r\n]*You are a helpful AI assistant tasked with summarizing conversations[^\r\n]*[\r\n]*`),
 }
 
 var claudeCodeVendorMentionRe = regexp.MustCompile(`(?i)\bClaude Code\b`)
@@ -44,7 +44,6 @@ func cleanClaudeCodeSystemText(text string) (shouldDelete bool, cleaned string) 
 				return true, ""
 			}
 			text = rest
-			trimmed = strings.TrimSpace(text)
 		} else {
 			return true, ""
 		}
@@ -59,28 +58,34 @@ func cleanClaudeCodeSystemText(text string) (shouldDelete bool, cleaned string) 
 				return true, ""
 			}
 			cleaned = "You are an AI assistant.\n\n" + rest
-			cleaned = claudeCodeVendorMentionRe.ReplaceAllString(cleaned, "AI Assistant")
+			cleaned = sanitizeClaudeCodeMentions(cleaned)
 			return false, strings.TrimSpace(cleaned)
 		}
 	}
 
 	// 3. If the block mentions Claude Code identity mid-text.
-	if strings.Contains(text, "You are Claude Code") {
-		cleaned = strings.ReplaceAll(text, "You are Claude Code, Anthropic's official CLI for Claude.", "You are an AI assistant.")
-		cleaned = claudeCodeVendorMentionRe.ReplaceAllString(cleaned, "AI Assistant")
+	if strings.Contains(text, "You are Claude Code") || strings.Contains(text, "official CLI for Claude") || strings.Contains(text, "Claude Agent SDK") {
+		cleaned = sanitizeClaudeCodeMentions(text)
 		return false, strings.TrimSpace(cleaned)
 	}
 
 	return false, text
 }
 
+func sanitizeClaudeCodeMentions(text string) string {
+	res := strings.ReplaceAll(text, "You are Claude Code, Anthropic's official CLI for Claude.", "You are an AI assistant.")
+	res = strings.ReplaceAll(res, "Anthropic's official CLI for Claude", "an AI assistant")
+	res = strings.ReplaceAll(res, "Claude Agent SDK", "Agent SDK")
+	return claudeCodeVendorMentionRe.ReplaceAllString(res, "AI Assistant")
+}
+
 // stripClaudeCodeBodyMarkers removes Claude Code identity markers and internal
 // features from the request body:
-// 1. Removes billing attribution blocks and cleans Claude Code identity from system prompt.
-//    If system becomes empty, removes the system field completely.
-// 2. Removes metadata.user_id, and removes metadata too if empty.
-// 3. Removes Claude-Code-exclusive fields: context_management, thinking.block_binding,
-//    fallbacks, fallback_credit_token, messages[].output_config.
+//  1. Removes billing attribution blocks and cleans Claude Code identity from system prompt.
+//     If system becomes empty, removes the system field completely.
+//  2. Removes metadata.user_id, and removes metadata too if empty.
+//  3. Removes Claude-Code-exclusive fields: context_management, thinking.block_binding,
+//     fallbacks, fallback_credit_token, messages[].output_config.
 func stripClaudeCodeBodyMarkers(body []byte) []byte {
 	if len(body) == 0 {
 		return body
@@ -223,12 +228,12 @@ func isClaudeCodeBetaToken(token string) bool {
 }
 
 // stripClaudeCodeHeaderMarkers cleans Claude Code identity markers from headers:
-// 1. Removes x-app, x-claude-code-session-id, x-client-request-id,
-//    anthropic-dangerous-direct-browser-access, and all x-stainless-* headers in any casing.
-// 2. Removes Claude-Code-exclusive beta tokens from anthropic-beta. If nothing is left,
-//    the anthropic-beta header is dropped completely.
-// 3. Sets user-agent to Anthropic/JS <version> if incoming UA is from Claude Code or empty.
-//    Non-Claude user-agents (e.g. curl, python) are preserved.
+//  1. Removes x-app, x-claude-code-session-id, x-client-request-id,
+//     anthropic-dangerous-direct-browser-access, and all x-stainless-* headers in any casing.
+//  2. Removes Claude-Code-exclusive beta tokens from anthropic-beta. If nothing is left,
+//     the anthropic-beta header is dropped completely.
+//  3. Sets user-agent to Anthropic/JS <version> if incoming UA is from Claude Code or empty.
+//     Non-Claude user-agents (e.g. curl, python) are preserved.
 func stripClaudeCodeHeaderMarkers(header http.Header) {
 	if header == nil {
 		return
@@ -254,22 +259,26 @@ func stripClaudeCodeHeaderMarkers(header http.Header) {
 		pkgVersion = defaultAnthropicPlainAPIJSSDKVersion
 	}
 
-	// 1. Remove x-app, x-claude-code-session-id, x-client-request-id,
-	// anthropic-dangerous-direct-browser-access, and all x-stainless-* headers.
+	// 1. Remove x-app, x-claude-* (including session ID, compaction, agent ID, etc.),
+	// x-client-request-id, anthropic-dangerous-direct-browser-access, and all x-stainless-* headers.
+	var toDeleteKeys []string
 	for k := range header {
 		lower := strings.ToLower(k)
 		if lower == "x-app" ||
-			lower == "x-claude-code-session-id" ||
 			lower == "x-client-request-id" ||
 			lower == "anthropic-dangerous-direct-browser-access" ||
+			strings.HasPrefix(lower, "x-claude-") ||
 			strings.HasPrefix(lower, "x-stainless-") {
-			delete(header, k)
+			toDeleteKeys = append(toDeleteKeys, k)
 		}
 	}
-	header.Del("x-app")
-	header.Del("x-claude-code-session-id")
-	header.Del("x-client-request-id")
-	header.Del("anthropic-dangerous-direct-browser-access")
+	for _, k := range toDeleteKeys {
+		delete(header, k)
+	}
+	deleteHeaderAllForms(header, "x-app")
+	deleteHeaderAllForms(header, "x-claude-code-session-id")
+	deleteHeaderAllForms(header, "x-client-request-id")
+	deleteHeaderAllForms(header, "anthropic-dangerous-direct-browser-access")
 
 	// 2. Clean anthropic-beta: remove all Claude Code internal betas.
 	var betaTokens []string
@@ -281,12 +290,7 @@ func stripClaudeCodeHeaderMarkers(header http.Header) {
 		}
 	}
 
-	for k := range header {
-		if strings.EqualFold(k, "anthropic-beta") {
-			delete(header, k)
-		}
-	}
-	header.Del("anthropic-beta")
+	deleteHeaderAllForms(header, "anthropic-beta")
 
 	var remainingBetas []string
 	for _, tok := range betaTokens {
@@ -302,12 +306,7 @@ func stripClaudeCodeHeaderMarkers(header http.Header) {
 	currentUA := getHeaderRaw(header, "user-agent")
 	lowerUA := strings.ToLower(currentUA)
 	if currentUA == "" || strings.Contains(lowerUA, "claude") {
-		for k := range header {
-			if strings.EqualFold(k, "user-agent") {
-				delete(header, k)
-			}
-		}
-		header.Del("user-agent")
+		deleteHeaderAllForms(header, "user-agent")
 		setHeaderRaw(header, resolveWireCasing("user-agent"), "Anthropic/JS "+pkgVersion)
 	}
 }
