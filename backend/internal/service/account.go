@@ -2425,12 +2425,12 @@ func (a *Account) IsAnthropicAPIKeyPassthroughEnabled() bool {
 
 // IsAnthropicPlainAPIEnabled 返回 Anthropic API Key 账号是否启用"以普通 API 形式发送（去除 Claude Code 标识）"。
 // 字段：accounts.extra.anthropic_plain_api。
-// 字段缺失或类型不正确时，按 false（关闭）处理。
+// 字段缺失或值非法时按 false（关闭）处理；字符串 "true"/"1" 与数值 1 视为开启。
 func (a *Account) IsAnthropicPlainAPIEnabled() bool {
 	if a == nil || a.Platform != PlatformAnthropic || a.Type != AccountTypeAPIKey || a.Extra == nil {
 		return false
 	}
-	return a.getExtraBool("anthropic_plain_api")
+	return a.getExtraBoolLenient("anthropic_plain_api")
 }
 
 // WebSearch 模拟三态常量
@@ -2723,16 +2723,28 @@ func (a *Account) getExtraBool(key string) bool {
 		return false
 	}
 	if v, ok := a.Extra[key]; ok {
-		switch val := v.(type) {
-		case bool:
-			return val
-		case string:
-			return strings.EqualFold(val, "true") || val == "1"
-		case float64:
-			return val == 1
-		case int:
-			return val == 1
+		if b, ok := v.(bool); ok {
+			return b
 		}
+	}
+	return false
+}
+
+// getExtraBoolLenient 与 getExtraBool 相同，但额外把 "true"/"1"（字符串）与数值 1 视为开启。
+// 仅用于需要容错的开关；getExtraBool 本身保持严格，其它开关依赖非 bool 值按关闭处理。
+func (a *Account) getExtraBoolLenient(key string) bool {
+	if a.Extra == nil {
+		return false
+	}
+	switch val := a.Extra[key].(type) {
+	case bool:
+		return val
+	case string:
+		return strings.EqualFold(val, "true") || val == "1"
+	case float64:
+		return val == 1
+	case int:
+		return val == 1
 	}
 	return false
 }
